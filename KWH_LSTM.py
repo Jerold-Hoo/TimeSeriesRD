@@ -23,21 +23,23 @@ MY_MODEL_PATH = r"models"
 SAVE_MODEL_PATH = r"models"
 
 # 定义参数
-rnn_unit=20       #hidden layer units
-input_size=4
-output_size=1
-lr=0.0006        #学习率
+rnn_unit = 20       #hidden layer units
+input_size = 4      #the number of input features
+output_size = 1     #the number of outputs
+learn_rate = 0.0006         #learn rate
+
 tf.reset_default_graph()
+
 #输入层、输出层权重、偏置
 
 weights = {
-         'in':tf.Variable(tf.random_normal([input_size,rnn_unit])),
-         'out':tf.Variable(tf.random_normal([rnn_unit,1]))
+         'in': tf.Variable(tf.random_normal([input_size, rnn_unit])),
+         'out': tf.Variable(tf.random_normal([rnn_unit, 1]))
          }
 
 biases = {
-        'in':tf.Variable(tf.constant(0.1,shape=[rnn_unit,])),
-        'out':tf.Variable(tf.constant(0.1,shape=[1,]))
+        'in': tf.Variable(tf.constant(0.1, shape=[rnn_unit,])),
+        'out': tf.Variable(tf.constant(0.1, shape=[1,]))
         }
 
 def get_data(data,batch_size=60, time_step=5, train_begin=0, train_end=7104):
@@ -79,24 +81,28 @@ def get_data(data,batch_size=60, time_step=5, train_begin=0, train_end=7104):
 
     return batch_index, train_x, train_y, test_x, test_y,[mean,std]
 
-def lstm(X):
-    batch_size=tf.shape(X)[0]
-    time_step=tf.shape(X)[1]
-    w_in=weights['in']
-    b_in=biases['in']
-    input=tf.reshape(X,[-1,input_size])  #需要将tensor转成2维进行计算，计算后的结果作为隐藏层的输入
-    input_rnn=tf.matmul(input,w_in)+b_in
-    input_rnn=tf.reshape(input_rnn,[-1,time_step,rnn_unit])  #将tensor转成3维，作为lstm cell的输入
 
-    cell=tf.contrib.rnn.BasicLSTMCell(rnn_unit)
+def lstm(X):
+
+    batch_size = tf.shape(X)[0]
+    time_step = tf.shape(X)[1]
+    w_in = weights['in']
+    b_in = biases['in']
+
+    input = tf.reshape(X, [-1, input_size])   #reshape x to 2 dims to do the matmul opration
+    input_rnn = tf.matmul(input, w_in)+b_in
+    input_rnn = tf.reshape(input_rnn, [-1, time_step, rnn_unit])  #将tensor转成3维，作为lstm cell的输入
+
+    cell = tf.contrib.rnn.BasicLSTMCell(rnn_unit)
     #cell=tf.contrib.rnn.core_rnn_cell.BasicLSTMCell(rnn_unit)
-    init_state=cell.zero_state(batch_size,dtype=tf.float32)
-    output_rnn,final_states=tf.nn.dynamic_rnn(cell, input_rnn,initial_state=init_state, dtype=tf.float32)  #output_rnn是记录lstm每个输出节点的结果，final_states是最后一个cell的结果
-    output=tf.reshape(output_rnn,[-1,rnn_unit]) #作为输出层的输入
-    w_out=weights['out']
-    b_out=biases['out']
-    pred=tf.matmul(output,w_out)+b_out
-    return pred,final_states
+
+    init_state = cell.zero_state(batch_size,dtype=tf.float32)
+    output_rnn, final_states = tf.nn.dynamic_rnn(cell, input_rnn, initial_state=init_state, dtype=tf.float32)  #output_rnn是记录lstm每个输出节点的结果，final_states是最后一个cell的结果
+    output = tf.reshape(output_rnn, [-1, rnn_unit]) #作为输出层的输入
+    w_out = weights['out']
+    b_out = biases['out']
+    pred = tf.matmul(output, w_out)+b_out
+    return pred, final_states
 
 def train_lstm(data,batch_size=80, time_step=15, train_begin=0, train_end=7102):
 
@@ -108,7 +114,7 @@ def train_lstm(data,batch_size=80, time_step=15, train_begin=0, train_end=7102):
 
     # 损失函数
     loss = tf.reduce_mean(tf.square(tf.reshape(pred, [-1]) - tf.reshape(Y, [-1])))
-    train_op = tf.train.AdamOptimizer(lr).minimize(loss)
+    train_op = tf.train.AdamOptimizer(learn_rate).minimize(loss)
 
     # 保存模型
     saver = tf.train.Saver()
