@@ -14,14 +14,13 @@ from sklearn.metrics import mean_absolute_error,mean_squared_error
 from sklearn.preprocessing import MinMaxScaler,StandardScaler
 import matplotlib.pyplot as plt
 from datetime import datetime
-import WYNYtest
 
 import warnings
 warnings.filterwarnings('ignore')
 
-MY_PATH = r"G:\111MyData\test_data201803.csv"
-MY_MODEL_PATH = r"G:\models"
-SAVE_MODEL_PATH = r"G:\models\LSTM.model"
+MY_PATH = r"KWH_Data\train.csv"
+MY_MODEL_PATH = r"models"
+SAVE_MODEL_PATH = r"models"
 
 # 定义参数
 rnn_unit=20       #hidden layer units
@@ -31,14 +30,15 @@ lr=0.0006        #学习率
 tf.reset_default_graph()
 #输入层、输出层权重、偏置
 
-weights={
+weights = {
          'in':tf.Variable(tf.random_normal([input_size,rnn_unit])),
          'out':tf.Variable(tf.random_normal([rnn_unit,1]))
          }
-biases={
+
+biases = {
         'in':tf.Variable(tf.constant(0.1,shape=[rnn_unit,])),
         'out':tf.Variable(tf.constant(0.1,shape=[1,]))
-}
+        }
 
 def get_data(data,batch_size=60, time_step=5, train_begin=0, train_end=7104):
     batch_index = []
@@ -102,8 +102,6 @@ def train_lstm(data,batch_size=80, time_step=15, train_begin=0, train_end=7102):
 
     X = tf.placeholder(tf.float32, shape=[None, time_step, input_size])
     Y = tf.placeholder(tf.float32, shape=[None, time_step, output_size])
-    batch_index, train_x, train_y, test_x, test_y, scaler = get_data(data,batch_size, time_step, train_begin,
-                                                                           train_end)
 
     # 定义lstm网络
     pred, _ = lstm(X)
@@ -149,6 +147,7 @@ def train_lstm(data,batch_size=80, time_step=15, train_begin=0, train_end=7102):
         mae = mean_absolute_error(y_pred=test_predict, y_true=test_y)
 
         print('mae:', mae)
+
     return test_y,test_predict
 
 # 使用模型
@@ -180,31 +179,37 @@ def prediction(data, batch_size=60, time_step=5, train_begin=0, train_end=7104):
 
     return test_y,test_predict
 
-def program():
-    data = pd.read_csv(MY_PATH,index_col=0)  # 读入数据
+
+if __name__ == "__main__":
+    data = pd.read_csv(MY_PATH, index_col=0)  # 读入数据
     data.loc[:, 'time'] = pd.to_datetime(data['time'])
     data['day'] = [i.day for i in data['time']]
     data['weekday'] = [i.dayofweek for i in data['time']]
     data['hour'] = [i.hour for i in data['time']]
-
-    #剔除异常值
+    # 剔除异常值
     # 通过 XGboost算法的判断0值模型来判断
     data = data[data['KWH'] > 2100]
-    train_end = len(data[data['time'] < datetime(2006,12,1)]) + 1
+    train_end = len(data[data['time'] < datetime(2006, 12, 1)]) + 1
+    print(data.head(15))
+    data = data.iloc[:, 1:].astype(np.float64).values
 
-    data = data.iloc[:,1:].astype(np.float64).values
+    batch_index, train_x, train_y, test_x, test_y, scaler = get_data(data, 200, 10, 0, train_end)
 
+    print(data[0:15])
+    print(batch_index)
+    print(train_x[0:15])
+    print(train_y[0:15])
     # 训练模型请使用以下语句
-    #test_y, test_predict = train_lstm(data,batch_size=200, time_step=10, train_begin=0, train_end=train_end)
+    # test_y, test_predict = train_lstm(data,batch_size=200, time_step=10, train_begin=0, train_end=train_end)
 
+    # test_y, test_predict = prediction(data, batch_size=200, time_step=10, train_begin=0, train_end=train_end)
 
-    test_y, test_predict = prediction(data, batch_size=200, time_step=10, train_begin=0, train_end=train_end)
+    # 画图计算
+    """
     plt.figure(figsize=(24, 8))
     plt.plot(test_predict.tolist()[0])
     plt.plot(test_y.tolist()[0])
     plt.title("Use LSTM to predict 'KWH' data in 2016.12")
     plt.legend(['predict-KWH','KWH'])
     plt.show()
-
-if __name__ == "__main__":
-    program()
+    """
