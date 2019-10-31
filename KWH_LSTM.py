@@ -104,7 +104,7 @@ def lstm(X):
     pred = tf.matmul(output, w_out)+b_out
     return pred, final_states
 
-def train_lstm(data,batch_size=80, time_step=15, train_begin=0, train_end=7102):
+def train_lstm(batch_index, train_x, train_y, test_x, test_y, scaler):
 
     X = tf.placeholder(tf.float32, shape=[None, time_step, input_size])
     Y = tf.placeholder(tf.float32, shape=[None, time_step, output_size])
